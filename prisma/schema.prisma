@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String   @id @default(uuid())
+  email           String   @unique
+  username        String   @unique
+  passwordHash    String
+  displayName     String?
+  avatarUrl       String?
+  tradingStyle    String?
+  experienceLevel String   @default("beginner")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  portfolio          Portfolio?
+  trades             Trade[]
+  moduleProgress     ModuleProgress[]
+  strategies         Strategy[]
+  achievements       UserAchievement[]
+  journalEntries     JournalEntry[]
+  leaderboardEntries LeaderboardEntry[]
+  watchlists         Watchlist[]
+}
+
+model Portfolio {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  startingCapital Float    @default(100000)
+  cashBalance     Float    @default(100000)
+  totalValue      Float    @default(100000)
+  totalPnl        Float    @default(0)
+  totalPnlPercent Float    @default(0)
+  todayPnl        Float    @default(0)
+  weekPnl         Float    @default(0)
+  monthPnl        Float    @default(0)
+  bestDay         Float    @default(0)
+  worstDay        Float    @default(0)
+  maxDrawdown     Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  positions Position[]
+}
+
+model Position {
+  id            String    @id @default(uuid())
+  portfolioId   String
+  portfolio     Portfolio  @relation(fields: [portfolioId], references: [id])
+  symbol        String
+  assetType     String
+  side          String
+  quantity      Float
+  entryPrice    Float
+  currentPrice  Float
+  stopLoss      Float?
+  takeProfit    Float?
+  unrealizedPnl Float     @default(0)
+  strategy      String?
+  notes         String?
+  status        String    @default("open")
+  openedAt      DateTime  @default(now())
+  closedAt      DateTime?
+
+  trade Trade?
+}
+
+model Trade {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+  positionId   String?   @unique
+  position     Position? @relation(fields: [positionId], references: [id])
+  symbol       String
+  assetType    String
+  side         String
+  entryPrice   Float
+  exitPrice    Float?
+  quantity     Float
+  stopLoss     Float?
+  takeProfit   Float?
+  pnl          Float?
+  pnlPercent   Float?
+  riskReward   Float?
+  strategy     String?
+  status       String    @default("open")
+  holdTime     Int?
+  emotionEntry String?
+  emotionExit  String?
+  notes        String?
+  openedAt     DateTime  @default(now())
+  closedAt     DateTime?
+
+  journalEntry JournalEntry?
+}
+
+model ModuleProgress {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  moduleId    Int
+  sectionId   Int
+  completed   Boolean   @default(false)
+  quizScore   Int?
+  timeSpent   Int       @default(0)
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@unique([userId, moduleId])
+}
+
+model Strategy {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  name            String
+  description     String?
+  tradingStyle    String
+  assets          String
+  entryRules      String
+  exitRules       String
+  riskPerTrade    Float    @default(1)
+  maxPositions    Int      @default(5)
+  filters         String?
+  backtestResults String?
+  isActive        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model UserAchievement {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  achievementId String
+  unlockedAt    DateTime @default(now())
+
+  @@unique([userId, achievementId])
+}
+
+model JournalEntry {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  tradeId   String?  @unique
+  trade     Trade?   @relation(fields: [tradeId], references: [id])
+  title     String
+  content   String
+  emotion   String?
+  lessons   String?
+  rating    Int?
+  createdAt DateTime @default(now())
+}
+
+model LeaderboardEntry {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  period       String
+  periodKey    String
+  totalPnl     Float    @default(0)
+  winRate      Float    @default(0)
+  totalTrades  Int      @default(0)
+  profitFactor Float    @default(0)
+  rank         Int?
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, period, periodKey])
+}
+
+model Watchlist {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  name      String
+  symbols   String
+  createdAt DateTime @default(now())
+}
