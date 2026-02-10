@@ -1,21 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import Navbar from "@/components/layout/Navbar";
-import { useStore } from "@/store/useStore";
+import { useAutoLogin } from "@/hooks/useAutoLogin";
 
 export default function Home() {
-  const { setUser } = useStore();
-  const [loaded, setLoaded] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => { if (data?.user) setUser(data.user); })
-      .catch(() => {})
-      .finally(() => setLoaded(true));
-  }, [setUser]);
+  const loaded = useAutoLogin();
 
   if (!loaded) return <div className="min-h-screen bg-gray-950 flex items-center justify-center"><div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>;
 

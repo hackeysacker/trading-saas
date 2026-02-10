@@ -4,17 +4,17 @@ import { useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import StrategyBuilder from "@/components/create/StrategyBuilder";
 import { useStore } from "@/store/useStore";
+import { useAutoLogin } from "@/hooks/useAutoLogin";
 
 export default function CreatePage() {
-  const { setUser, setActiveTab } = useStore();
+  const { setActiveTab } = useStore();
+  const loaded = useAutoLogin();
 
   useEffect(() => {
     setActiveTab("create");
-    fetch("/api/auth/me")
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => { if (data?.user) setUser(data.user); })
-      .catch(() => {});
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [setActiveTab]);
+
+  if (!loaded) return <div className="min-h-screen bg-gray-950 flex items-center justify-center"><div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
     <div className="min-h-screen bg-gray-950">

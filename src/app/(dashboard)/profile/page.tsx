@@ -4,17 +4,16 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/layout/Navbar";
 import { useStore } from "@/store/useStore";
+import { useAutoLogin } from "@/hooks/useAutoLogin";
 
 export default function ProfilePage() {
   const { user, setUser } = useStore();
   const [stats, setStats] = useState({ totalTrades: 0, winRate: 0, profitFactor: 0, completedModules: 0 });
   const router = useRouter();
+  const loaded = useAutoLogin();
 
   useEffect(() => {
-    fetch("/api/auth/me")
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => { if (data?.user) setUser(data.user); })
-      .catch(() => {});
+    if (!loaded) return;
     fetch("/api/portfolio")
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
@@ -27,13 +26,15 @@ export default function ProfilePage() {
         if (data?.completedModules) setStats((s) => ({ ...s, completedModules: data.completedModules.length }));
       })
       .catch(() => {});
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loaded]);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
     router.push("/");
   }
+
+  if (!loaded) return <div className="min-h-screen bg-gray-950 flex items-center justify-center"><div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
     <div className="min-h-screen bg-gray-950">

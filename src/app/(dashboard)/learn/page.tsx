@@ -6,18 +6,19 @@ import ModuleSidebar from "@/components/learn/ModuleSidebar";
 import ModuleContent from "@/components/learn/ModuleContent";
 import { getModuleById } from "@/lib/modules-data";
 import { useStore } from "@/store/useStore";
+import { useAutoLogin } from "@/hooks/useAutoLogin";
 
 export default function LearnPage() {
-  const { currentModule, setCurrentModule, completedModules, markModuleComplete, setUser, setActiveTab } = useStore();
+  const { currentModule, setCurrentModule, completedModules, markModuleComplete, setActiveTab } = useStore();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const loaded = useAutoLogin();
 
   useEffect(() => {
     setActiveTab("learn");
-    fetch("/api/auth/me")
-      .then((res) => res.ok ? res.json() : null)
-      .then((data) => { if (data?.user) setUser(data.user); })
-      .catch(() => {});
-    // Load saved progress
+  }, [setActiveTab]);
+
+  useEffect(() => {
+    if (!loaded) return;
     fetch("/api/modules/progress")
       .then((res) => res.ok ? res.json() : null)
       .then((data) => {
@@ -26,37 +27,35 @@ export default function LearnPage() {
         }
       })
       .catch(() => {});
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loaded, markModuleComplete]);
 
   const module = getModuleById(currentModule);
 
   function handleComplete() {
     markModuleComplete(currentModule);
-    // Save to server
     fetch("/api/modules/progress", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ moduleId: currentModule, sectionId: module?.sectionId, completed: true }),
     }).catch(() => {});
-    // Auto-advance to next module
     if (currentModule < 59) {
       setCurrentModule(currentModule + 1);
     }
   }
 
+  if (!loaded) return <div className="min-h-screen bg-gray-950 flex items-center justify-center"><div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>;
+
   return (
     <div className="min-h-screen bg-gray-950">
       <Navbar />
       <div className="flex">
-        {/* Mobile toggle */}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="lg:hidden fixed bottom-4 left-4 z-50 bg-emerald-600 text-white p-3 rounded-full shadow-lg"
         >
-          {sidebarOpen ? "✕" : "☰"}
+          {sidebarOpen ? "\u2715" : "\u2630"}
         </button>
 
-        {/* Sidebar */}
         <div className={`${sidebarOpen ? "block" : "hidden"} lg:block fixed lg:static z-40 inset-y-16 left-0`}>
           <ModuleSidebar
             currentModule={currentModule}
@@ -65,7 +64,6 @@ export default function LearnPage() {
           />
         </div>
 
-        {/* Main Content */}
         <main className="flex-1 p-6 lg:p-8 overflow-y-auto h-[calc(100vh-4rem)]">
           {module ? (
             <ModuleContent
